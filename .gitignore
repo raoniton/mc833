@@ -1,5 +1,12 @@
 # arquivos de programas 
 .vscode/
 
+# arquivos de sistema
+.DS_Store
+
 # arquivos compilados
-.o
+.o  
+
+# arquivos mp3
+songs/
+.mp3
