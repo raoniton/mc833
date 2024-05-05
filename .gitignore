@@ -1,0 +1,5 @@
+# arquivos de programas 
+.vscode/
+
+# arquivos compilados
+.o
