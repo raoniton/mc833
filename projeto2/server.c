@@ -9,25 +9,24 @@
 
 #include "configAndCRUD.h"
 
-void request(Data *data, int client_socket, pid_t pid, char verificacao[STR]){
+int server_socket, client_socket, reuse=1;
+    struct sockaddr_in server_Addr, client_Addr;
+    socklen_t client_addr_len;
+
+void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  client_addr, pid_t pid, char verificacao[STR]){
     char buffer[MAXSTR];
-    char msg[MAXSTR] = "\nESCOLHA UMA OPCAO:\n[1] - Listar todas as musicas e informacoes.\n[2] - Buscar musica por id.\n[3] - Listar musicas por ano de lancamento.\n[4] - Listar musicas por idioma e ano de lancamento.\n[5] - Listar musicas por estilo musical\n[0] - Sair.\n\nDigite a opcao: ";
+    char msg[MAXSTR] = "\nESCOLHA UMA OPCAO:\n[1] - Listar todas as musicas e informacoes.\n[2] - Listar musicas por estilo musical\n[3] - Fazer download\nDigite a opcao: ";
     char aux1[MAXSTR]; 
     char songInfo[6][MAXSTR];
     char songInfoMsg[6][MAXSTR] = {{"titulo da musica:"},{"nome do autor/cantor da musica:"},{"idioma da musica:"},{"estilo da musica:"},{"ano de lancamento:"},{"refrao da musica:"}};
     int bytes_received;
     int n;
     bool super = false;
+    Packet packet;
     
-    //VERIFICACAO DE CLIENT SUPER - se for um client com privilegios o menu exibe mais acoes que o menu para client sem privilegios
-    recv(client_socket, buffer, MAXSTR, 0);
-    if(strcmp(buffer, "super") == 0){
-        super = true;
-        strcpy(msg, "\nESCOLHA UMA OPCAO:\n[1] - Listar todas as musicas e informacoes.\n[2] - Buscar musica por id.\n[3] - Listar musicas por ano de lancamento.\n[4] - Listar musicas por idioma e ano de lancamento.\n[5] - Listar musicas por estilo musical\n[6] - Cadastrar nova musica\n[7] - Remover musica pelo id\n[0] - Sair.\nDigite a opcao: ");
-    }
 
     // Receive and send messages
-    while(1){
+    //while(1){
         memset(buffer, 0, MAXSTR);
         strcpy(buffer,msg);
         //sprintf(buffer, "ESCOLHA UMA OPCAO:\n[1] - Buscar musica por id\n[2] - Listar todas as musicas e informacoes.\n[3] - Listar musicas por ano de lancamento\n[4] - Listar musicas por idioma e ano de lancamento\n[5] - Listar musicas por estilo musical\n[0] - Sair\n");
@@ -35,7 +34,7 @@ void request(Data *data, int client_socket, pid_t pid, char verificacao[STR]){
         memset(buffer, 0, MAXSTR);
         bytes_received = recv(client_socket, buffer, MAXSTR, 0);
         if (bytes_received <= 0) {
-            break;
+        //    break;
         }
         printf("Client pid %d - opt: %s", getpid(), buffer);        //Se buffer == 0 -> Cliente no client side pediu para fechar a conexao
         //printf("strlen: %ld\n", strlen(buffer));
@@ -45,62 +44,7 @@ void request(Data *data, int client_socket, pid_t pid, char verificacao[STR]){
             memset(buffer, 0, MAXSTR);
             printAllDataInfo(data, client_socket);
         
-        }else if(strncmp(buffer, "2", strlen(buffer)-1 ) == 0 ){            //BUSCA MUSICA POR UM ID INFORMADO
-            memset(buffer, 0, MAXSTR);
-
-            strcpy(buffer, "Digite o id:");
-            send(client_socket, buffer, strlen(buffer),0); 
-            memset(buffer, 0, MAXSTR);
-
-            recv(client_socket, buffer, MAXSTR, 0);
-            
-            printf("Client pid %d - enviou id: %s", getpid(), buffer);
-            
-            //printEssencialData(data, int client_socket, int flag, int id, int year, char *lang, char *style)
-            printEssencialData(data, client_socket,        0,        atoi(buffer),    0, NULL, NULL); 
-            memset(buffer, 0, MAXSTR);
-            
-            
-        }else if(strncmp(buffer, "3", strlen(buffer)-1 ) == 0 ){            //BUSCA MUSICAS POR ANO DE LANCAMENTO
-            memset(buffer, 0, MAXSTR);
-
-            strcpy(buffer, "Digite o ano de lancamento:");
-            send(client_socket, buffer, strlen(buffer),0); 
-            memset(buffer, 0, MAXSTR);
-
-            recv(client_socket, buffer, MAXSTR, 0);
-            
-            printf("Client pid %d - enviou ano: %s\n", getpid(), buffer);
-            
-            //printEssencialData(Data *data, int client_socket, int flag, int id, int year, char *lang, char *style)
-            printEssencialData(data, client_socket, 1, 0, atoi(buffer), NULL, NULL); 
-            memset(buffer, 0, MAXSTR);
-            
-            
-        }else if(strncmp(buffer, "4", strlen(buffer)-1 ) == 0){             //BUSCA MUSICAS POR IDIOMA E ANO DE LANCAMENTO
-            memset(buffer, 0, MAXSTR);
-
-            strcpy(buffer, "Digite o idioma:");
-            send(client_socket, buffer, strlen(buffer),0); 
-            memset(buffer, 0, MAXSTR);
-
-            recv(client_socket, buffer, MAXSTR, 0);
-            strcpy(aux1, buffer);
-            printf("Client pid %d - enviou idioma: %s", getpid(), buffer);
-
-            strcpy(buffer, "Digite o ano de lancamento:");
-            send(client_socket, buffer, strlen(buffer),0); 
-            memset(buffer, 0, MAXSTR);
-
-            recv(client_socket, buffer, MAXSTR, 0);
-            
-            printf("Client pid %d - enviou ano: %s", getpid(), buffer);
-            
-            //printEssencialData(Data *data, int client_socket, int flag, int id, int year, char *lang, char *style)
-            printEssencialData(data, client_socket, 2, 0, atoi(buffer), aux1, NULL); 
-            memset(buffer, 0, MAXSTR);
-            
-        }else if(strncmp(buffer, "5", strlen(buffer)-1 ) == 0){             //BUSCA MUSICAS POR ESTILO MUSICAL
+        }else if(strncmp(buffer, "2", strlen(buffer)-1 ) == 0){             //BUSCA MUSICAS POR ESTILO MUSICAL
             memset(buffer, 0, MAXSTR);
 
             strcpy(buffer, "Digite o estilo da musica:");
@@ -115,69 +59,77 @@ void request(Data *data, int client_socket, pid_t pid, char verificacao[STR]){
             printEssencialData(data, client_socket, 3, 0, 0, NULL, buffer); 
             memset(buffer, 0, MAXSTR);
 
-        //ESPECIAL OPTIONS
-        }else if(super && strncmp(buffer, "6", strlen(buffer)-1 ) == 0){    //CADASTRA UM NOVA MUSICA
-            
-            int i=0, y;
+        //DOWNLOAD
+        }else if(strncmp(buffer, "3", strlen(buffer)-1 ) == 0){             //BUSCA MUSICAS POR ESTILO MUSICAL
             memset(buffer, 0, MAXSTR);
-            for(i=0; i < 6; i++){
-                if(i==0){
-                    strcpy(buffer, "\033[1;34m*O id sera gerado automaticamente*\033[0m\nDigite o ");
-                    strcat(buffer,songInfoMsg[i]);
-                }else{
-                    strcpy(buffer, "Digite o ");
-                    strcat(buffer,songInfoMsg[i]);
-                }
 
-                send(client_socket, buffer, strlen(buffer),0);      // envia a mensagem para o cliente
-                
-                memset(buffer, 0, MAXSTR);
-                recv(client_socket, buffer, MAXSTR, 0);             // recebe a resposta e salva no vetor
-
-                //ESCAPO AS VIRGULAS QUE O USUARIO PODE TER ENTRADO
-                y=0;
-                while(y < strlen(buffer)){
-                    if(buffer[y] == ',')
-                        buffer[y] = ' ';
-                    y++;
-                }
-
-                strncpy(songInfo[i], buffer, strlen(buffer)-1);
-                printf("Client pid %d - enviou %s: %s", getpid(), songInfoMsg[i], buffer);
-                memset(buffer, 0, MAXSTR);
-            }
-            //ordem da solicitacoes:        title      , auth       , lang       , style      , year       , chorus - a ordem que o client tem que responder muda um pouco da ordem de exibicao
-            //writeSong(data, client_socket,title      , auth       , lang       , year       , style      , chorus)
-            data = writeSong(data, client_socket, songInfo[0], songInfo[1], songInfo[2], songInfo[4], songInfo[3], songInfo[5]);
-
-            
-
-            
-        }else if(super && strncmp(buffer, "7", strlen(buffer)-1 ) == 0){    //REMOVE UMA MUSICA
-            memset(buffer, 0, MAXSTR);
-            strcpy(buffer, "Digite o id da musica a ser removida:");
+            strcpy(buffer, "Digite o id que deseja baixar: ");
             send(client_socket, buffer, strlen(buffer),0); 
-
             memset(buffer, 0, MAXSTR);
+
             recv(client_socket, buffer, MAXSTR, 0);
             printf("Client pid %d - enviou id: %s", getpid(), buffer);
             
-            deleteSong(data, client_socket, atoi(buffer));
+            //VERIFICA SE A ENTRADA EH UM ID(numero) - caso seja entrado qualquer string diferente de uma string numerica, mostra a mensagem de erro
+            if(validaInput(buffer) == 1){
+                int x = findToDownload(data, client_socket, atoi(buffer)); // quando converto usando o atoi, caso a pessoa entre 'a' o atoi converte para 0 e isso pode ocasionar o download de uma musica que nao eh a que o client queria, por isso a funcao verifica a entrada
+                printf("posicao no vetor data: %d - nome da musica: %s\n", x, data[x].title);
+                int len = sizeof(client_addr);
+                memset(&buffer, 0, sizeof(buffer));
+                printf("\nMessage from UDP client: ");
+                n = recvfrom(udp_socket, buffer, sizeof(buffer), 0,
+                            (struct sockaddr *)&client_addr, &len);
+                //puts(buffer);
+                char path[STR] = "songs/";
+                strcat(path, data[x].title);
+                strcat(path,".mp3");
+                printf("%s\n", path);
+                FILE *fp = fopen(path, "r");
+                    
+                
+                int bytes_read;
+                char check[5];
+                int y=0;
+                packet.id = y;
+                while((bytes_read = fread(packet.data, 1, MAXSTR, fp)) > 0) {
+                    //printf("bytes received: %d - ", bytes_read);
+                    do{    
+                        int bytes_sent = sendto(udp_socket, &packet, sizeof(Packet), 0,
+                            (struct sockaddr *)&client_addr, sizeof(client_addr));
+                        
+                        memset(buffer, 0, MAXSTR);
+                        recvfrom(udp_socket, buffer, sizeof(buffer), 0,
+                                (struct sockaddr *)&client_addr, &len);
+                        sprintf(check, "%d", packet.id);
+                        printf("check: %s - ", check);
+                    
+                    
+                    }while(strcmp(buffer, check) != 0);
+                    
+                    y++;
+                    memset(packet.data, 0 , MAXSTR);
+                    packet.id = y;
+                }
+                strcpy(packet.data, "EOF_FLAG");
+                sendto(udp_socket, &packet, sizeof(Packet), 0,
+                            (struct sockaddr *)&client_addr, sizeof(client_addr));
+                printf("\nIIII numero de envios: %d\n", y);
 
-        }else if(strncmp(buffer, "0", strlen(buffer)-1 ) == 0){             //SAI DO LOOP
-            break;
-            //memset(buffer, 0, MAXSTR);
-            
-        }else if(strncmp(buffer, "8", 1) == 0){                             //ESSA OPCAO NAO APARECE NO MENU, MAS SERVE PARA LIMPAR O TERMINAL
-            system("clear");
+                printf("IIIII Transferencia concluida.\n");   
+                fclose(fp);
+            }else{
+                strcpy(buffer, "\033[1;31mId Invalido!\033[0m\n");
+                send(client_socket, buffer, strlen(buffer), 0);
+            }
+        
         }else{
             //printf("This is red text\n");
-            strcpy(buffer, "\033[1;31mOpcao Invalida ou Nao permitida para esse nivel de privilegio!\033[0m\n");
+            strcpy(buffer, "\033[1;31mOpcao Invalida!\033[0m\n");
             send(client_socket, buffer, strlen(buffer), 0);
             
         }
         memset(buffer, 0, MAXSTR);
-    }
+    //}
 
     
         // //Caso todos os dados sejam recebidos n==0, caso contrario, continua recebendo
@@ -194,6 +146,14 @@ void request(Data *data, int client_socket, pid_t pid, char verificacao[STR]){
     exit(EXIT_SUCCESS);
 }
 
+int max(int x, int y)
+{
+    if (x > y)
+        return x;
+    else
+        return y;
+}
+
 /************************* main() do server ******************************
 *  Funcao que realizara os passos para o servidor aceitar conexoes
 *   -   cria o socket
@@ -204,32 +164,38 @@ void request(Data *data, int client_socket, pid_t pid, char verificacao[STR]){
 */
 int main(){
     //VARIAVEIS DA CONFIGURACAO DO SERVER
-    int server_socket, client_socket, reuse=1;
-    socklen_t client_addr_len;
-    struct sockaddr_in server_Addr, client_Addr;
+    int server_socket, client_socket, udp_socket,  reuse=1, nready, maxfd;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t len;
+    pid_t pid;
+    fd_set rset;
+    ssize_t n;
     char verificacao[STR];
+    char buffer[MAXSTR];
+    int bytes_recvd;
+
     //SETUP E VARIAVEIS DE CONTROLE DOS DADOS E ARQUIVOS CSV
     createCSVs();
     Data *data = loadSongsData();
 
-    recv(client_socket, verificacao, strlen(verificacao), 0);
     
-
+    
+ //################## Configuracao Socket TCP ##################
     //Socket
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if(server_socket == -1){
         perror("Erro: socket()\n");
         exit(EXIT_FAILURE);
     }else
-        printf("Socket criado com sucesso.\n");
+        printf("Socket tcp criado com sucesso.\n");
 
     //Garantindo que a sctruct estara zerada
-    memset(&server_Addr, 0, sizeof(server_Addr));
+    memset(&server_addr, 0, sizeof(server_addr));
     
     //Preenchendo as infos em server_Addr
-    server_Addr.sin_family = AF_INET;           //
-    server_Addr.sin_addr.s_addr = INADDR_ANY;   //
-    server_Addr.sin_port = htons(PORT);         //
+    server_addr.sin_family = AF_INET;           //
+    server_addr.sin_addr.s_addr = INADDR_ANY;   //
+    server_addr.sin_port = htons(TCP_PORT);         //
 
     //Reuseaddr - permite que use novamente uma porta que foi usada poucos instantes antes
     if(setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) == -1) {
@@ -238,7 +204,7 @@ int main(){
     }
 
     //Bind
-    if(bind(server_socket, (struct sockaddr*)&server_Addr, sizeof(server_Addr)) == -1){
+    if(bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1){
         perror("Erro: bind().\n");
         exit(EXIT_FAILURE);
     }else
@@ -249,31 +215,91 @@ int main(){
         perror("Erro: listen().\n");
         exit(EXIT_FAILURE);
     }else
-        printf("Server is listening --- Port: %d\n", PORT);
+        printf("Server tcp is listening --- Port: %d\n", TCP_PORT);
 
-    //Accept
+ //################## Configuracao Socket UDP ##################
+ 
+    //Socket UDP
+    udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+    if(udp_socket == -1){
+        perror("Erro: socket()\n");
+        exit(EXIT_FAILURE);
+    }else
+        printf("Socket udp criado com sucesso.\n");
+
+    if(bind(udp_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1){
+        perror("Erro: bind().\n");
+        exit(EXIT_FAILURE);
+    }else
+        printf("Bind realizado com sucesso.\n");
+
+    // // limpa o conjunto de descritores
+    // FD_ZERO(&rset);
+
+    // //maximo entre os file descriptor
+    // maxfd = max(server_socket, udp_socket) + 1;
     
     while(1){
-        client_addr_len = sizeof(client_Addr);
-        client_socket = accept(server_socket, (struct sockaddr*)&client_Addr, &client_addr_len);
-        if(client_socket == -1){
-            perror("Erro: accept().\n");    //Em caso de erro ao aceitar um client, nao eh necessario matar o programa.
-            continue;                    //ou seja, o while pode seguir esperando por novos accepts
-        }else
-            printf("Client Accept realizado.\n");
+        // set listenfd and udpfd in readset
+        // FD_SET(server_socket, &rset);
+        // FD_SET(udp_socket, &rset);
         
-        pid_t pid = fork();
-        if(pid == -1){
-            perror("Erro: fork()");
-            close(client_socket);
-            continue;
-        }else if(pid == 0){
-            close(server_socket);               //fecha o server_socket do fork
-            request(data, client_socket, pid, verificacao);
-        }else
-            close(client_socket);
+        // //seleciona o socket que esta pronto
+        // nready = select(maxfd, &rset, NULL, NULL, NULL); 
+
+        // // if tcp socket is readable then handle
+        // // it by accepting the connection
+        // if(FD_ISSET(server_socket, &rset)){
+             len = sizeof(client_addr);
+            client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &len);
+            if(client_socket == -1){
+                perror("Erro: accept().\n");    //Em caso de erro ao aceitar um client, nao eh necessario matar o programa.
+                continue;                    //ou seja, o while pode seguir esperando por novos accepts
+            }else
+                printf("Client Accept realizado.\n");
+            
+            pid = fork();
+            if(pid == -1){
+                perror("Erro: fork()");
+                close(client_socket);
+                continue;
+            }else if(pid == 0){
+                close(server_socket);               //fecha o server_socket do fork
+                request(data, client_socket, udp_socket, client_addr, pid, verificacao);
+            }else
+                close(client_socket);
         
-        //printf("Entre qualquer caracter para sair");
+            
+        //}
+
+        // if udp socket is readable receive the message.
+        // if(FD_ISSET(udp_socket, &rset)){
+        //     len = sizeof(client_addr);
+        //     memset(&buffer, 0, sizeof(buffer));
+        //     printf("\nMessage from UDP client: ");
+        //     n = recvfrom(udp_socket, buffer, sizeof(buffer), 0,
+        //                  (struct sockaddr *)&client_addr, &len);
+        //     puts(buffer);
+        //     char path[STR] = "songs/";
+        //     strcat(path,buffer);
+        //     FILE *fp = fopen(path, "r");
+        //     printf("%s\n", path);
+                
+                
+        //     printf("Arquivo realmente existeeee haha\n");   
+        //     int x=0;
+        //     while((bytes_recvd = fread(buffer, 1, MAXSTR, fp)) > 0) {
+             
+        //         int bytes_sent = sendto(udp_socket, (const char *)buffer, bytes_recvd, 0,
+        //             (struct sockaddr *)&client_addr, sizeof(client_addr));
+               
+        //         x++;
+        //     }
+        //     printf("\nnumero de envios: %d\n", x);
+        
+        //     printf("Transferencia concluida.\n");   
+        //     fclose(fp);
+        // }
         
     }
     

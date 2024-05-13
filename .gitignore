@@ -5,8 +5,18 @@
 .DS_Store
 
 # arquivos compilados
-.o  
+*.o  
 
 # arquivos mp3
 songs/
 .mp3
+udp/
+tcp_udp/
+teste1/
+# outros
+teste
+teste.c
+server-alt.c
+client-alt.c
+
+.gitignore

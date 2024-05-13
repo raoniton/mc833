@@ -447,6 +447,47 @@ void printAllDataInfo(Data *data,  int client_socket){
     free(buffer);
 }
 
+int findToDownload(Data *data, int client_socket, int id){
+    int i, n = nSongsFromCSV(), qtd=0, tamAtual=MAXSTR;
+    char buffer[MAXSTR], aux[MAXSTR];
+    
+    //Prepara o cabecalho que sera retornado ao client
+    //sprintf(buffer, "\n%-3s %-20s %-15s\n---+--------------------+---------------\n", "id","Musica","Autor");
+
+    
+    if(n > 0){
+        for(i=0; i < n; i++){
+            if(data[i].id == id){
+                //sprintf(aux, "%-3d %-20s %-15.20s\n", data[i].id, data[i].title, data[i].auth);     
+                sprintf(aux, "%s", data[i].title);     
+                strcat(buffer, aux);        //concatena as linhas encontradas no buffer
+                qtd++;                      //incrementa a quantidade de encontrados
+                break;
+            }
+        }
+    }
+    
+    if(qtd == 0){
+        //sprintf(buffer, "\nid\n%s\n%d  nao encontrado!\n%s\n", "---+---------------", id, "---+---------------");
+        sprintf(buffer, "id %d nao encontrado!", id);
+        send(client_socket, buffer, strlen(buffer), 0);    
+        i = -1;
+    }else{
+        //strcat(buffer,"---+--------------------+---------------\n\n");
+        send(client_socket, buffer, strlen(buffer), 0);
+    }
+
+    return i;
+}
+
+int validaInput(char *str){
+    for(int i=0; i < strlen(str) - 1; i++){ // strlen - 1 para desconsiderar o \0 da string 
+        if(!isdigit(str[i]))
+            return -1;
+    }
+    return 1;
+}
+
 /*
 //Caso todos os dados sejam recebidos n==0, caso contrario, continua recebendo
         while ((n = recv(client_socket, buffer, sizeof(buffer), 0)) > 0) {

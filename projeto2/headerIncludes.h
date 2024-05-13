@@ -4,9 +4,12 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <err.h>
+#include <ctype.h>
 
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <netinet/in.h>
 #include <arpa/inet.h> // inet_addr()
 
@@ -15,7 +18,10 @@
 #define col 7 //qtd de informacoes
 
 #define PORT 9877
+#define TCP_PORT 9877
+#define UDP_PORT 9988
 #define LISTENQUEUE 1024
+#define TIME_OUT 5  //tempo em segundos
 
 typedef struct Data{
     int  id;
@@ -26,6 +32,11 @@ typedef struct Data{
     char chorus[MAXSTR];
     int year;
 }Data;
+
+typedef struct Packet{
+    int id;
+    char data[MAXSTR];
+}Packet;
 
 //************************************ PROTOTIPOS ************************************
 void    createCSVs();
