@@ -447,18 +447,20 @@ void printAllDataInfo(Data *data,  int client_socket){
     free(buffer);
 }
 
+/******************************* findToDownload ***********************************
+*  Funcao que ao ser chamada verifica se o id passado esta presente no banco de dados
+*  Argumentos:
+*   -   *data - ponteiro de struct data
+*   -   client_socket - numero do socket do client que o server fez accept
+*   -   id - numero que o cliente deseja baixar
+*/
 int findToDownload(Data *data, int client_socket, int id){
     int i, n = nSongsFromCSV(), qtd=0, tamAtual=MAXSTR;
     char buffer[MAXSTR], aux[MAXSTR];
     
-    //Prepara o cabecalho que sera retornado ao client
-    //sprintf(buffer, "\n%-3s %-20s %-15s\n---+--------------------+---------------\n", "id","Musica","Autor");
-
-    
     if(n > 0){
         for(i=0; i < n; i++){
             if(data[i].id == id){
-                //sprintf(aux, "%-3d %-20s %-15.20s\n", data[i].id, data[i].title, data[i].auth);     
                 sprintf(aux, "%s", data[i].title);     
                 strcat(buffer, aux);        //concatena as linhas encontradas no buffer
                 qtd++;                      //incrementa a quantidade de encontrados
@@ -468,18 +470,22 @@ int findToDownload(Data *data, int client_socket, int id){
     }
     
     if(qtd == 0){
-        //sprintf(buffer, "\nid\n%s\n%d  nao encontrado!\n%s\n", "---+---------------", id, "---+---------------");
-        sprintf(buffer, "id %d nao encontrado!", id);
-        send(client_socket, buffer, strlen(buffer), 0);    
-        i = -1;
+        i = -1;                             //retorna -1 se nada foi encontrado
     }else{
         //strcat(buffer,"---+--------------------+---------------\n\n");
+//        printf("NOMEEE: %s\n", buffer);
         send(client_socket, buffer, strlen(buffer), 0);
+        memset(buffer, 0, MAXSTR);
     }
 
-    return i;
+    return i;                               //retorna i que eh a posicao que o dado esta no vetor
 }
 
+/******************************* validaInput ***********************************
+*  Funcao que ao ser chamada verifica se a entrada contem apenas digitos numericos
+*  Argumentos:
+*   -   *str - uma string
+*/
 int validaInput(char *str){
     for(int i=0; i < strlen(str) - 1; i++){ // strlen - 1 para desconsiderar o \0 da string 
         if(!isdigit(str[i]))
@@ -487,13 +493,3 @@ int validaInput(char *str){
     }
     return 1;
 }
-
-/*
-//Caso todos os dados sejam recebidos n==0, caso contrario, continua recebendo
-        while ((n = recv(client_socket, buffer, sizeof(buffer), 0)) > 0) {
-            buffer[n] = '\0';       //isso faz o buffer iniciar da posicao inicial novamente. 
-            printf("%s", buffer);   //a saida para o terminal do client fica normal como se 
-                                    //o buffer tivesse conseguido armazenar toda a string
-        }
-*/
-

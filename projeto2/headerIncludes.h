@@ -33,6 +33,8 @@ typedef struct Data{
     int year;
 }Data;
 
+// Struct na qual tanto o client como o server tem, sendo que o server envia os packets
+// e o client precisa saber o formato para poder utilizar os dados
 typedef struct Packet{
     int id;
     char data[MAXSTR];

@@ -15,7 +15,7 @@ int server_socket, client_socket, reuse=1;
 
 void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  client_addr, pid_t pid, char verificacao[STR]){
     char buffer[MAXSTR];
-    char msg[MAXSTR] = "\nESCOLHA UMA OPCAO:\n[1] - Listar todas as musicas e informacoes.\n[2] - Listar musicas por estilo musical\n[3] - Fazer download\nDigite a opcao: ";
+    char msg[MAXSTR] = "\nESCOLHA UMA OPCAO:\n[1] - Listar todas as musicas e informacoes.\n[2] - Listar musicas por estilo musical\n[3] - Fazer download\n[0] - Sair.\nDigite a opcao: ";
     char aux1[MAXSTR]; 
     char songInfo[6][MAXSTR];
     char songInfoMsg[6][MAXSTR] = {{"titulo da musica:"},{"nome do autor/cantor da musica:"},{"idioma da musica:"},{"estilo da musica:"},{"ano de lancamento:"},{"refrao da musica:"}};
@@ -26,16 +26,13 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
     
 
     // Receive and send messages
-    //while(1){
+    while(1){
         memset(buffer, 0, MAXSTR);
         strcpy(buffer,msg);
-        //sprintf(buffer, "ESCOLHA UMA OPCAO:\n[1] - Buscar musica por id\n[2] - Listar todas as musicas e informacoes.\n[3] - Listar musicas por ano de lancamento\n[4] - Listar musicas por idioma e ano de lancamento\n[5] - Listar musicas por estilo musical\n[0] - Sair\n");
         send(client_socket, buffer, strlen(buffer),0); 
         memset(buffer, 0, MAXSTR);
-        bytes_received = recv(client_socket, buffer, MAXSTR, 0);
-        if (bytes_received <= 0) {
-        //    break;
-        }
+        recv(client_socket, buffer, MAXSTR, 0);
+        
         printf("Client pid %d - opt: %s", getpid(), buffer);        //Se buffer == 0 -> Cliente no client side pediu para fechar a conexao
         //printf("strlen: %ld\n", strlen(buffer));
 
@@ -47,7 +44,7 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
         }else if(strncmp(buffer, "2", strlen(buffer)-1 ) == 0){             //BUSCA MUSICAS POR ESTILO MUSICAL
             memset(buffer, 0, MAXSTR);
 
-            strcpy(buffer, "Digite o estilo da musica:");
+            strcpy(buffer, "Digite o estilo da musica: ");
             send(client_socket, buffer, strlen(buffer),0); 
             memset(buffer, 0, MAXSTR);
 
@@ -59,11 +56,11 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
             printEssencialData(data, client_socket, 3, 0, 0, NULL, buffer); 
             memset(buffer, 0, MAXSTR);
 
-        //DOWNLOAD
+        //OPCAO DE DOWNLOAD
         }else if(strncmp(buffer, "3", strlen(buffer)-1 ) == 0){             //BUSCA MUSICAS POR ESTILO MUSICAL
             memset(buffer, 0, MAXSTR);
 
-            strcpy(buffer, "Digite o id que deseja baixar: ");
+            strcpy(buffer, "Digite o id da musica que deseja baixar: ");
             send(client_socket, buffer, strlen(buffer),0); 
             memset(buffer, 0, MAXSTR);
 
@@ -71,76 +68,96 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
             printf("Client pid %d - enviou id: %s", getpid(), buffer);
             
             //VERIFICA SE A ENTRADA EH UM ID(numero) - caso seja entrado qualquer string diferente de uma string numerica, mostra a mensagem de erro
+            //printf("eh valido? : %d\n", validaInput(buffer));
+            //exit(0);
             if(validaInput(buffer) == 1){
+                //printf("Retorno da FindToDownload: %d\n", findToDownload(data, client_socket, atoi(buffer)));
                 int x = findToDownload(data, client_socket, atoi(buffer)); // quando converto usando o atoi, caso a pessoa entre 'a' o atoi converte para 0 e isso pode ocasionar o download de uma musica que nao eh a que o client queria, por isso a funcao verifica a entrada
-                printf("posicao no vetor data: %d - nome da musica: %s\n", x, data[x].title);
-                int len = sizeof(client_addr);
-                memset(&buffer, 0, sizeof(buffer));
-                printf("\nMessage from UDP client: ");
-                n = recvfrom(udp_socket, buffer, sizeof(buffer), 0,
-                            (struct sockaddr *)&client_addr, &len);
-                //puts(buffer);
-                char path[STR] = "songs/";
-                strcat(path, data[x].title);
-                strcat(path,".mp3");
-                printf("%s\n", path);
-                FILE *fp = fopen(path, "r");
+                //printf("Retorno da FindToDownload: %d\n", x);
+                if(x > -1){
+                    //printf("posicao no vetor data: %d - nome da musica: %s\n", x, data[x].title);
+                    int len = sizeof(client_addr);
+                    memset(&buffer, 0, sizeof(buffer));
                     
-                
-                int bytes_read;
-                char check[5];
-                int y=0;
-                packet.id = y;
-                while((bytes_read = fread(packet.data, 1, MAXSTR, fp)) > 0) {
-                    //printf("bytes received: %d - ", bytes_read);
-                    do{    
-                        int bytes_sent = sendto(udp_socket, &packet, sizeof(Packet), 0,
-                            (struct sockaddr *)&client_addr, sizeof(client_addr));
-                        
-                        memset(buffer, 0, MAXSTR);
-                        recvfrom(udp_socket, buffer, sizeof(buffer), 0,
+                    //NESSE recvfrom o client envia "Ready", que indica que esta pronto para receber a musica
+                    n = recvfrom(udp_socket, buffer, sizeof(buffer), 0,
                                 (struct sockaddr *)&client_addr, &len);
-                        sprintf(check, "%d", packet.id);
-                        printf("check: %s - ", check);
+                    //puts(buffer);
+                    //printf("Client pid %d - via UDP enviou: %s", getpid(), buffer);
+                    char path[STR] = "songs/";
+                    strcat(path, data[x].title);
+                    strcat(path,".mp3");
+                    //printf("%s\n", path);
+                    FILE *fp = fopen(path, "r");
+                        
                     
-                    
-                    }while(strcmp(buffer, check) != 0);
-                    
-                    y++;
-                    memset(packet.data, 0 , MAXSTR);
+                    int bytes_read;
+                    char check[5];
+                    int y=0;
                     packet.id = y;
-                }
-                strcpy(packet.data, "EOF_FLAG");
-                sendto(udp_socket, &packet, sizeof(Packet), 0,
-                            (struct sockaddr *)&client_addr, sizeof(client_addr));
-                printf("\nIIII numero de envios: %d\n", y);
+                    while((bytes_read = fread(packet.data, 1, MAXSTR, fp)) > 0) {
+                        //printf("bytes received: %d - ", bytes_read);
+                        do{    
+                            int bytes_sent = sendto(udp_socket, &packet, sizeof(Packet), 0,
+                                (struct sockaddr *)&client_addr, sizeof(client_addr));
+                            
+                            memset(buffer, 0, MAXSTR);
+                            recvfrom(udp_socket, buffer, sizeof(buffer), 0,
+                                    (struct sockaddr *)&client_addr, &len);
+                            sprintf(check, "%d", packet.id);
+                            //printf("check: %s - ", check);
+                        
+                        
+                        }while(strcmp(buffer, check) != 0);
+                        
+                        y++;
+                        memset(packet.data, 0 , MAXSTR);
+                        packet.id = y;
+                    }
+                    strcpy(packet.data, "EOF_FLAG");
+                    sendto(udp_socket, &packet, sizeof(Packet), 0,
+                                (struct sockaddr *)&client_addr, sizeof(client_addr));
+                    //printf("\nnumero de envios: %d\n", y);
 
-                printf("IIIII Transferencia concluida.\n");   
-                fclose(fp);
+                    printf("Transferencia concluida - '%s.mp3' para o Client pid: %d\n", data[x].title, getpid());   
+                    fclose(fp);
+                }else{
+                    int id = atoi(buffer);
+                    sprintf(buffer, "\n------------------------\nid %d nao encontrado!\n------------------------\n", id);
+                    //printf("%s\n", buffer);
+                    send(client_socket, buffer, strlen(buffer), 0);
+                    memset(buffer, 0, MAXSTR);
+                    recv(client_socket, buffer, MAXSTR, 0);
+                    //printf("Client pid %d - opt: %s", getpid(), buffer);
+                
+                }
+                
             }else{
-                strcpy(buffer, "\033[1;31mId Invalido!\033[0m\n");
+                strcpy(buffer, "\n------------------------\n\033[1;31mCaracter Invalido!\033[0m\n------------------------\n");
+                //buffer[strlen(buffer)] = '\0';
                 send(client_socket, buffer, strlen(buffer), 0);
+                memset(buffer, 0, MAXSTR);
+                recv(client_socket, buffer, MAXSTR, 0);
+                
             }
         
+        }else if(strncmp(buffer, "0", strlen(buffer)-1 ) == 0){             //SAI DO LOOP
+            break;
+            
+        }else if(strncmp(buffer, "4", strlen(buffer)-1 ) == 0){             //SAI DO LOOP
+            // se o cliente enviou 4, ele queria limpar o terminal do lado client
         }else{
             //printf("This is red text\n");
-            strcpy(buffer, "\033[1;31mOpcao Invalida!\033[0m\n");
+            strcpy(buffer, "\n------------------------\n\033[1;31mOpcao Invalida!\033[0m\n------------------------\n");
             send(client_socket, buffer, strlen(buffer), 0);
+            memset(buffer, 0, MAXSTR);
+            //recv(client_socket, buffer, MAXSTR, 0);
             
         }
         memset(buffer, 0, MAXSTR);
-    //}
-
-    
-        // //Caso todos os dados sejam recebidos n==0, caso contrario, continua recebendo
-        // while ((n = recv(client_socket, buffer, sizeof(buffer), 0)) > 0) {
-        //     buffer[n] = '\0';       //isso faz o buffer iniciar da posicao inicial novamente. 
-        //     printf("%s", buffer);   //a saida para o terminal do client fica normal como se 
-        //                             //o buffer tivesse conseguido armazenar toda a string
-        // }
-        // //printf("Mensagem do Cliente: %s  - tam: %ld\n", buffer, strlen(buffer));
-        
-
+        memset(buffer, 0, MAXSTR);
+        buffer[0] = '\0';
+    }
     
     close(client_socket);
     exit(EXIT_SUCCESS);
@@ -233,23 +250,8 @@ int main(){
     }else
         printf("Bind realizado com sucesso.\n");
 
-    // // limpa o conjunto de descritores
-    // FD_ZERO(&rset);
-
-    // //maximo entre os file descriptor
-    // maxfd = max(server_socket, udp_socket) + 1;
     
     while(1){
-        // set listenfd and udpfd in readset
-        // FD_SET(server_socket, &rset);
-        // FD_SET(udp_socket, &rset);
-        
-        // //seleciona o socket que esta pronto
-        // nready = select(maxfd, &rset, NULL, NULL, NULL); 
-
-        // // if tcp socket is readable then handle
-        // // it by accepting the connection
-        // if(FD_ISSET(server_socket, &rset)){
              len = sizeof(client_addr);
             client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &len);
             if(client_socket == -1){
@@ -268,38 +270,6 @@ int main(){
                 request(data, client_socket, udp_socket, client_addr, pid, verificacao);
             }else
                 close(client_socket);
-        
-            
-        //}
-
-        // if udp socket is readable receive the message.
-        // if(FD_ISSET(udp_socket, &rset)){
-        //     len = sizeof(client_addr);
-        //     memset(&buffer, 0, sizeof(buffer));
-        //     printf("\nMessage from UDP client: ");
-        //     n = recvfrom(udp_socket, buffer, sizeof(buffer), 0,
-        //                  (struct sockaddr *)&client_addr, &len);
-        //     puts(buffer);
-        //     char path[STR] = "songs/";
-        //     strcat(path,buffer);
-        //     FILE *fp = fopen(path, "r");
-        //     printf("%s\n", path);
-                
-                
-        //     printf("Arquivo realmente existeeee haha\n");   
-        //     int x=0;
-        //     while((bytes_recvd = fread(buffer, 1, MAXSTR, fp)) > 0) {
-             
-        //         int bytes_sent = sendto(udp_socket, (const char *)buffer, bytes_recvd, 0,
-        //             (struct sockaddr *)&client_addr, sizeof(client_addr));
-               
-        //         x++;
-        //     }
-        //     printf("\nnumero de envios: %d\n", x);
-        
-        //     printf("Transferencia concluida.\n");   
-        //     fclose(fp);
-        // }
         
     }
     
