@@ -1,7 +1,7 @@
 /*
 ################################################################################
 #            MC833 - PROGRAMACAO DE REDES DE COMPUTADORES - 1S_2024            #      
-#            PROFº:  EDMUNDO ROBERTO MAUTO MADEIRA                             #
+#            PROFº:  EDMUNDO ROBERTO MAURO MADEIRA                             #
 #            NOME:   RAONITON ADRIANO DA SILVA                                 #
 #            RA:     186291                                                    #
 ################################################################################
@@ -208,10 +208,6 @@ void clientRequest(int client_socket){
         }else if(strncmp(buffer, "4", 1) == 0){                     //Essa opcao nao aparece no menu, mas serve para limpar o terminal
             system("clear");
         }
-        // else{
-        //     recvAux(client_socket, buffer);
-        // }
-
         memset(buffer, 0, MAXSTR);
         
     }

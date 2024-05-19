@@ -1,7 +1,7 @@
 /*
 ################################################################################
 #            MC833 - PROGRAMACAO DE REDES DE COMPUTADORES - 1S_2024            #      
-#            PROFº:  EDMUNDO ROBERTO MAUTO MADEIRA                             #
+#            PROFº:  EDMUNDO ROBERTO MAURO MADEIRA                             #
 #            NOME:   RAONITON ADRIANO DA SILVA                                 #
 #            RA:     186291                                                    #
 ################################################################################
@@ -57,7 +57,7 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
             memset(buffer, 0, MAXSTR);
 
         //OPCAO DE DOWNLOAD
-        }else if(strncmp(buffer, "3", strlen(buffer)-1 ) == 0){             //BUSCA MUSICAS POR ESTILO MUSICAL
+        }else if(strncmp(buffer, "3", strlen(buffer)-1 ) == 0){             
             memset(buffer, 0, MAXSTR);
 
             strcpy(buffer, "Digite o id da musica que deseja baixar: ");
@@ -68,35 +68,32 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
             printf("Client pid %d - enviou id: %s", getpid(), buffer);
             
             //VERIFICA SE A ENTRADA EH UM ID(numero) - caso seja entrado qualquer string diferente de uma string numerica, mostra a mensagem de erro
-            //printf("eh valido? : %d\n", validaInput(buffer));
-            //exit(0);
             if(validaInput(buffer) == 1){
-                //printf("Retorno da FindToDownload: %d\n", findToDownload(data, client_socket, atoi(buffer)));
+                
                 int x = findToDownload(data, client_socket, atoi(buffer)); // quando converto usando o atoi, caso a pessoa entre 'a' o atoi converte para 0 e isso pode ocasionar o download de uma musica que nao eh a que o client queria, por isso a funcao verifica a entrada
-                //printf("Retorno da FindToDownload: %d\n", x);
+                
                 if(x > -1){
-                    //printf("posicao no vetor data: %d - nome da musica: %s\n", x, data[x].title);
                     int len = sizeof(client_addr);
                     memset(&buffer, 0, sizeof(buffer));
                     
                     //NESSE recvfrom o client envia "Ready", que indica que esta pronto para receber a musica
                     n = recvfrom(udp_socket, buffer, sizeof(buffer), 0,
                                 (struct sockaddr *)&client_addr, &len);
-                    //puts(buffer);
-                    //printf("Client pid %d - via UDP enviou: %s", getpid(), buffer);
+                    
                     char path[STR] = "songs/";
                     strcat(path, data[x].title);
                     strcat(path,".mp3");
-                    //printf("%s\n", path);
                     FILE *fp = fopen(path, "r");
-                        
                     
                     int bytes_read;
                     char check[5];
                     int y=0;
                     packet.id = y;
                     while((bytes_read = fread(packet.data, 1, MAXSTR, fp)) > 0) {
-                        //printf("bytes received: %d - ", bytes_read);
+                        
+                        // #######   ACK  #######
+                        // Envia o que foi lido do arquivo e espera o retorno, 
+                        // enquanto o retorno nao for igual ao id enviado, nao envia a proxima parte do arquivo
                         do{    
                             int bytes_sent = sendto(udp_socket, &packet, sizeof(Packet), 0,
                                 (struct sockaddr *)&client_addr, sizeof(client_addr));
@@ -105,8 +102,6 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
                             recvfrom(udp_socket, buffer, sizeof(buffer), 0,
                                     (struct sockaddr *)&client_addr, &len);
                             sprintf(check, "%d", packet.id);
-                            //printf("check: %s - ", check);
-                        
                         
                         }while(strcmp(buffer, check) != 0);
                         
@@ -114,31 +109,27 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
                         memset(packet.data, 0 , MAXSTR);
                         packet.id = y;
                     }
-                    strcpy(packet.data, "EOF_FLAG");
+                    strcpy(packet.data, "EOF_FLAG"); // EOF_FLAG nao eh uma flag padrao do C, mas sim uma flag deste sistema
                     sendto(udp_socket, &packet, sizeof(Packet), 0,
                                 (struct sockaddr *)&client_addr, sizeof(client_addr));
-                    //printf("\nnumero de envios: %d\n", y);
-
+                    
                     printf("Transferencia concluida - '%s.mp3' para o Client pid: %d\n", data[x].title, getpid());   
                     fclose(fp);
                 }else{
                     int id = atoi(buffer);
                     sprintf(buffer, "\n------------------------\nid %d nao encontrado!\n------------------------\n", id);
-                    //printf("%s\n", buffer);
                     send(client_socket, buffer, strlen(buffer), 0);
                     memset(buffer, 0, MAXSTR);
                     recv(client_socket, buffer, MAXSTR, 0);
-                    //printf("Client pid %d - opt: %s", getpid(), buffer);
-                
+
                 }
                 
             }else{
                 strcpy(buffer, "\n------------------------\n\033[1;31mCaracter Invalido!\033[0m\n------------------------\n");
-                //buffer[strlen(buffer)] = '\0';
                 send(client_socket, buffer, strlen(buffer), 0);
                 memset(buffer, 0, MAXSTR);
                 recv(client_socket, buffer, MAXSTR, 0);
-                
+
             }
         
         }else if(strncmp(buffer, "0", strlen(buffer)-1 ) == 0){             //SAI DO LOOP
@@ -147,14 +138,11 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
         }else if(strncmp(buffer, "4", strlen(buffer)-1 ) == 0){             //SAI DO LOOP
             // se o cliente enviou 4, ele queria limpar o terminal do lado client
         }else{
-            //printf("This is red text\n");
             strcpy(buffer, "\n------------------------\n\033[1;31mOpcao Invalida!\033[0m\n------------------------\n");
             send(client_socket, buffer, strlen(buffer), 0);
             memset(buffer, 0, MAXSTR);
-            //recv(client_socket, buffer, MAXSTR, 0);
             
         }
-        memset(buffer, 0, MAXSTR);
         memset(buffer, 0, MAXSTR);
         buffer[0] = '\0';
     }
@@ -163,13 +151,6 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
     exit(EXIT_SUCCESS);
 }
 
-int max(int x, int y)
-{
-    if (x > y)
-        return x;
-    else
-        return y;
-}
 
 /************************* main() do server ******************************
 *  Funcao que realizara os passos para o servidor aceitar conexoes
@@ -197,7 +178,7 @@ int main(){
 
     
     
- //################## Configuracao Socket TCP ##################
+    //################## Configuracao Socket TCP ##################
     //Socket
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if(server_socket == -1){
@@ -234,8 +215,7 @@ int main(){
     }else
         printf("Server tcp is listening --- Port: %d\n", TCP_PORT);
 
- //################## Configuracao Socket UDP ##################
- 
+    //################## Configuracao Socket UDP ##################
     //Socket UDP
     udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
     if(udp_socket == -1){

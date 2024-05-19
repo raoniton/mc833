@@ -41,18 +41,27 @@ typedef struct Packet{
 }Packet;
 
 //************************************ PROTOTIPOS ************************************
-void    createCSVs();
-Data*   writeSong(Data *data, int client_socket, char title[STR], char auth[STR], char lang[STR], char year[STR], char style[STR], char chorus[MAXSTR]);
-Data*   deleteSong(Data *data, int client_socket, int k);
-void    updateSongsDataCSV(Data* data);
-int     countSongsData();               //conta o numero de musicas do csv
-int     nSongsFromCSV();                //carrega a quantidade/numero de musicas
-void    updateNSongsToCSV();
-int     generateId();                   //
-int     lenFirstRowFromCSV(char *s);    //conta o numero de caracteres do cabecalho csv
+//UTILIZADAS NO PROJETO 2
 Data*   loadSongsData();                //carrega as informacoes das musicas para uma struct
-void    printEssencialData(Data *data, int client_socket, int flag, int id, int year, char *lang, char *style);
-void    printAllDataInfo(Data *data, int client_socket);   //
+int     nSongsFromCSV();                //carrega a quantidade/numero de musicas
+int     lenFirstRowFromCSV(char *s);    //conta o numero de caracteres do cabecalho csv     
+void    printEssencialData(Data *data, int client_socket, int flag, int id, int year, char *lang, char *style); //FOI ALTERADA NO PROJETO 2
+void    printAllDataInfo(Data *data, int client_socket);   //FOI ALTERADA NO PROJETO 2
+
+//ADICIONADAS PARA O PROJETO 2
+int     findToDownload(Data *data, int client_socket, int id);
+int     validaInput(char *str);
+
+
+//NAO UTILIZADA NO PROJETO 2
+Data*   writeSong(Data *data, int client_socket, char title[STR], char auth[STR], char lang[STR], char year[STR], char style[STR], char chorus[MAXSTR]);       //NAO UTILIZADA NO PROJETO 2
+Data*   deleteSong(Data *data, int client_socket, int k);       //NAO UTILIZADA NO PROJETO 2
+void    updateSongsDataCSV(Data* data);                         //NAO UTILIZADA NO PROJETO 2
+int     countSongsData();               //conta o numero de musicas do csv  //NAO UTILIZADA NO PROJETO 2
+void    createCSVs();
+void    updateNSongsToCSV();                                    //NAO UTILIZADA NO PROJETO 2
+int     generateId();                   //                      //NAO UTILIZADA NO PROJETO 2
+
 
 
 

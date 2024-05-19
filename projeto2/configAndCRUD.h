@@ -449,36 +449,37 @@ void printAllDataInfo(Data *data,  int client_socket){
 
 /******************************* findToDownload ***********************************
 *  Funcao que ao ser chamada verifica se o id passado esta presente no banco de dados
+*  Execuca uma busca binaria
 *  Argumentos:
 *   -   *data - ponteiro de struct data
 *   -   client_socket - numero do socket do client que o server fez accept
 *   -   id - numero que o cliente deseja baixar
 */
 int findToDownload(Data *data, int client_socket, int id){
-    int i, n = nSongsFromCSV(), qtd=0, tamAtual=MAXSTR;
+    int meio, n = nSongsFromCSV(), ini, fim=n-1, qtd=0, tamAtual=MAXSTR;
     char buffer[MAXSTR], aux[MAXSTR];
-    
+
     if(n > 0){
-        for(i=0; i < n; i++){
-            if(data[i].id == id){
-                sprintf(aux, "%s", data[i].title);     
+        while(ini <= fim){
+            meio = (ini + fim)/2;
+            if(id == data[meio].id){
+                sprintf(aux, "%s", data[meio].title);     
                 strcat(buffer, aux);        //concatena as linhas encontradas no buffer
                 qtd++;                      //incrementa a quantidade de encontrados
-                break;
+                send(client_socket, buffer, strlen(buffer), 0);
+                memset(buffer, 0, MAXSTR);
+                return meio;                //retorna meio que eh a posicao que o dado esta no vetor
             }
+              
+            if(id > data[meio].id)
+                ini = meio+1;
+            else if(id < data[meio].id)
+                fim = meio - 1;
         }
     }
-    
-    if(qtd == 0){
-        i = -1;                             //retorna -1 se nada foi encontrado
-    }else{
-        //strcat(buffer,"---+--------------------+---------------\n\n");
-//        printf("NOMEEE: %s\n", buffer);
-        send(client_socket, buffer, strlen(buffer), 0);
-        memset(buffer, 0, MAXSTR);
-    }
 
-    return i;                               //retorna i que eh a posicao que o dado esta no vetor
+    if(qtd == 0)
+        return -1;                         //retorna -1 se nada foi encontrado
 }
 
 /******************************* validaInput ***********************************
