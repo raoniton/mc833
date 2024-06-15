@@ -68,15 +68,11 @@ int itHasSubString(char buffer[], char substring[]){
 *  Argumentos:
 *   -   client_socket - numero do socket do client que o server fez connect
 */
-void clientRequest(int client_socket){
+void clientRequest(int client_socket, char ip[STR]){
 	char buffer[MAXSTR];
 	int n;
-    //fd_set rfds;
-    //struct timeval tv;
-    //int retval;
     Packet packet;
     while(1){
-       
         memset(buffer, 0, MAXSTR);                              // limpa o buffer
         recv(client_socket, buffer, MAXSTR,0);                  // recebe o menu no buffer
         printf("%s", buffer);                                   // print o menu no terminal do client
@@ -86,17 +82,26 @@ void clientRequest(int client_socket){
         // copio a mensagem do servidor para o buffer
         n = 0; 
         while ((buffer[n++] = getchar()) != '\n'); 
+        //printf("strlen buffer: %ld\n", strlen(buffer));
         send(client_socket, buffer, strlen(buffer),0);          // envia a opcao escolhida para o servidor
+        if(strlen(buffer)-1 == 0){
+            memset(buffer, 0, MAXSTR);
+            continue;
+        }
+            
+        
         
         //caso a entrada for um zero, encerra a conexao do lado do cliente
         if(strcmp(buffer, "0\n") == 0){                         
             //recvAux(client_socket, buffer);
             break;
 
-        }else if(strcmp(buffer, "1\n") == 0){                         
-            //recvAux(client_socket, buffer);
+        }
+        // else if(strcmp(buffer, "1\n") == 0){                         
+        //     recvAux(client_socket, buffer);
 
-        }else if(strcmp(buffer, "2\n") == 0){      // strlen(buffer) - 1, serve para ignorar o \n na comparacao
+        // }
+        else if(strcmp(buffer, "2\n") == 0){      // strlen(buffer) - 1, serve para ignorar o \n na comparacao
             
             recvAux(client_socket, buffer);
             sendAux(client_socket, buffer);
@@ -107,14 +112,14 @@ void clientRequest(int client_socket){
             recvAux(client_socket, buffer);         // recebe a mensagem: "Digite o id que deseja baixar:"
             sendAux(client_socket, buffer);         // envia o id
             
-            recv(client_socket, buffer, MAXSTR,0);  // recebe a mensagem de retorno
+            recv(client_socket, buffer, MAXSTR,0);  // recebe a mensagem de retorno - o nome da musica
             
             
             // Verifica se a entrada eh valida
             if(itHasSubString(buffer, "nao encontrado") || itHasSubString(buffer, "Invalido")){
                 printf("%s", buffer);
                 memset(buffer, 0, MAXSTR);;
-                send(client_socket, "teste", strlen("teste"),0);
+                //send(client_socket, "teste", strlen("teste"),0);
             
             // Se o If falhar, entao eh uma entrada valida, entao entra no else onde 
             // eh feita a preparacao do diretorio e eh criado um arquivo para receber os dados
@@ -143,18 +148,20 @@ void clientRequest(int client_socket){
                     perror("Erro: socket()\n");
                     exit(EXIT_FAILURE);
                 }
-
+                
                 //Garantindo que a sctruct estara zerada
                 memset(&server_udp_addr, 0, sizeof(server_udp_addr));
 
                 //Preenchendo as infos em server_Addr
                 server_udp_addr.sin_family = AF_INET;           //
-                server_udp_addr.sin_addr.s_addr = INADDR_ANY;   //
+                server_udp_addr.sin_addr.s_addr = inet_addr(ip);   //
                 server_udp_addr.sin_port = htons(PORT);         //
                 
                 memset(buffer, 0, MAXSTR);
+                
                 int bytes_sent = sendto(udp_socket, "Ready", strlen("Ready"), 0, 
                         (struct sockaddr *)&server_udp_addr, client_udp_addr_len);
+                       
                 if (bytes_sent < 0) {
                     perror("Error sending message");
                     exit(EXIT_FAILURE);
@@ -186,13 +193,13 @@ void clientRequest(int client_socket){
                         //Devido a checagem, eh garantido que recebemos a posicao correta do pacote e por isso podemos escrever no arquivo
                         fwrite(packet.data, 1, bytes_received, fp);     //escreve no arquivo os dados recebidos no packet
                         check = packet.id;                              // atualizo o valor de check
-                        
+                        //printf("check: %d - \n", packet.id);
                     }else{
                         //caso o ACK nao chegue no server, ele vai tentar enviar novamente o mesmo packet, que eh o caso desse if, ai envio ack de "chegou"
                         //mas dessa vez nao fazemos nenhuma escrita no arquivo
                         bytes_sent = sendto(udp_socket, buffer, strlen(buffer), 0, 
                                 (struct sockaddr *)&server_udp_addr, client_udp_addr_len);
-                                printf("check: %d - ", packet.id);
+                                //printf("check: %d - \n", packet.id);
                         
                     }
                 }
@@ -262,7 +269,7 @@ int main(int argc, char *argv[]){
     printf("Cliente conectado --- Port: %d\n", PORT);
     
     //Funcao que fara o cliente exibir as respostas do server
-    clientRequest(client_socket);
+    clientRequest(client_socket, ip);
     
     close(client_socket);
     return 0;

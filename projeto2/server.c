@@ -36,11 +36,14 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
         printf("Client pid %d - opt: %s", getpid(), buffer);        //Se buffer == 0 -> Cliente no client side pediu para fechar a conexao
         //printf("strlen: %ld\n", strlen(buffer));
 
-        
+        //printf("buffer length: %ld\n", strlen(buffer));
+        if(strlen(buffer)-1 == 0)
+            continue;
         if(strncmp(buffer, "1", strlen(buffer)-1) == 0){                    //BUSCA TODAS AS MUSICAS E INFO
             memset(buffer, 0, MAXSTR);
+            //printf("Entrou no 1\n");
             printAllDataInfo(data, client_socket);
-        
+            memset(buffer, 0, MAXSTR);
         }else if(strncmp(buffer, "2", strlen(buffer)-1 ) == 0){             //BUSCA MUSICAS POR ESTILO MUSICAL
             memset(buffer, 0, MAXSTR);
 
@@ -49,12 +52,17 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
             memset(buffer, 0, MAXSTR);
 
             recv(client_socket, buffer, MAXSTR, 0);
-            
-            printf("Client pid %d - enviou ano: %s", getpid(), buffer);
+            if(strlen(buffer)-1 == 0){
+                sprintf(buffer, "\n----------------------------------------\nEstilo inexistente!\n----------------------------------------\n");
+                send(client_socket, buffer, strlen(buffer), 0);
+                continue;
+            }
+                
+            printf("Client pid %d - enviou estilo: %s", getpid(), buffer);
             
             //printEssencialData(Data *data, int client_socket, int flag, int id, int year, char *lang, char *style)
             printEssencialData(data, client_socket, 3, 0, 0, NULL, buffer); 
-            memset(buffer, 0, MAXSTR);
+            //memset(buffer, 0, MAXSTR);
 
         //OPCAO DE DOWNLOAD
         }else if(strncmp(buffer, "3", strlen(buffer)-1 ) == 0){             
@@ -69,7 +77,7 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
             
             //VERIFICA SE A ENTRADA EH UM ID(numero) - caso seja entrado qualquer string diferente de uma string numerica, mostra a mensagem de erro
             if(validaInput(buffer) == 1){
-                
+                //dentro da funcao findToDownload faco um  ---> send
                 int x = findToDownload(data, client_socket, atoi(buffer)); // quando converto usando o atoi, caso a pessoa entre 'a' o atoi converte para 0 e isso pode ocasionar o download de uma musica que nao eh a que o client queria, por isso a funcao verifica a entrada
                 
                 if(x > -1){
@@ -143,8 +151,8 @@ void request(Data *data, int client_socket, int udp_socket, struct sockaddr_in  
             memset(buffer, 0, MAXSTR);
             
         }
-        memset(buffer, 0, MAXSTR);
-        buffer[0] = '\0';
+        //memset(buffer, 0, MAXSTR);
+        //buffer[0] = '\0';
     }
     
     close(client_socket);
