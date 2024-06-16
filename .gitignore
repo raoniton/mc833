@@ -8,7 +8,6 @@
 *.o  
 
 # arquivos mp3
-songs/
 .mp3
 udp/
 tcp_udp/

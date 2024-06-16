@@ -268,6 +268,7 @@ int main(int argc, char *argv[]){
     
     printf("Cliente conectado --- Port: %d\n", PORT);
     
+    
     //Funcao que fara o cliente exibir as respostas do server
     clientRequest(client_socket, ip);
     
